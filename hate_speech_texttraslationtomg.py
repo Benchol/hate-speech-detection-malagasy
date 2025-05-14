@@ -14,6 +14,7 @@ import pandas as pd
 import torch
 from google.colab import drive
 from tqdm.auto import tqdm
+import wandb
 
 from google.colab import drive
 
@@ -21,8 +22,8 @@ drive.mount("/content/drive")
 
 # Définir les index de début et de fin pour cette exécution
 start_index = 0
-end_index = 200  # Exclut cette ligne
-batch_size = 32  # Taille du lot pour la traduction
+end_index = 10000  # Exclut cette ligne
+batch_size = 16  # Taille du lot pour la traduction
 
 # Vérifier si un GPU est disponible et le définir comme device, sinon utiliser le CPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -74,12 +75,14 @@ for i in tqdm(range(0, len(df_subset), batch_size), desc="Traduction par lots"):
 # Ajouter la liste des traductions comme une nouvelle colonne au sous-ensemble
 df_subset['translated'] = translations
 
-# Concaténer le sous-ensemble traduit avec le reste du DataFrame
-df.loc[start_index:end_index - 1, 'translated'] = df_subset['translated']
+# Initialiser WandB
+wandb.init(project="hate-speech-translated-malagasy")
+# Créer un tableau WandB à partir du sous-ensemble traduit (contenant 'text', 'label' et 'translated')
+wandb_table = wandb.Table(data=df_subset[['text', 'label', 'translated']], columns=["text", "label", "translated"])
 
-output_file_path = f'/content/drive/MyDrive/hate_speech/hate_speech_mg_translated_part_{start_index}_{end_index - 1}.csv'
-df.to_csv(output_file_path, index=False)
-print(f"\nLes traductions pour les lignes {start_index} à {end_index - 1} ont été sauvegardées sous '{output_file_path}'")
+# Enregistrer le tableau dans WandB
+wandb.log({"translations": wandb_table})
 
-pd.read_csv(output_file_path)
+# Fermer la run WandB
+wandb.finish()
 
