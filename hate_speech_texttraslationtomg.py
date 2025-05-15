@@ -9,21 +9,50 @@ Original file is located at
 ### Script translation text(en) to malagasy(mg)
 """
 
+import subprocess
+import sys
+
+def install_and_import(package):
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"Installation de {package}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    finally:
+        globals()[package] = __import__(package)
+
+install_and_import('transformers')
+install_and_import('pandas')
+install_and_import('torch')
+install_and_import('google.colab')
+install_and_import('tqdm.auto')
+install_and_import('wandb')
+install_and_import('argparse')
+install_and_import('bitsandbytes')
+
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import pandas as pd
 import torch
 from google.colab import drive
 from tqdm.auto import tqdm
 import wandb
+import argparse
+import bitsandbytes
 
 from google.colab import drive
 
 drive.mount("/content/drive")
 
-# Définir les index de début et de fin pour cette exécution
-start_index = 0
-end_index = 10000  # Exclut cette ligne
-batch_size = 16  # Taille du lot pour la traduction
+# Définir les arguments pour le script
+parser = argparse.ArgumentParser(description='Translate a portion of a CSV file using MADLAD-400-7B-MT-BT.')
+parser.add_argument('--start_index', type=int, default=0, help='Index de la première ligne à traiter (inclusive).')
+parser.add_argument('--end_index', type=int, default=10000, help='Index de la dernière ligne à traiter (exclusive).')
+parser.add_argument('--batch_size', type=int, default=16, help='Taille du lot pour la traduction.')
+args = parser.parse_args()
+
+start_index = args.start_index
+end_index = args.end_index
+batch_size = args.batch_size
 
 # Vérifier si un GPU est disponible et le définir comme device, sinon utiliser le CPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -32,7 +61,7 @@ print(f"Utilisation de l'appareil : {device}")
 # modèle MADLAD-400-7B-MT-BT
 model_name = "google/madlad400-7b-mt-bt"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name, load_in_8bit=True, device_map='auto').to(device)
 
 # Monter Google Drive pour le chargement et les sauvegardes des données
 drive.mount('/content/drive')
