@@ -12,23 +12,16 @@ Original file is located at
 import subprocess
 import sys
 
-def install_and_import(package):
+def install_package(package_name):
     try:
-        __import__(package)
-    except ImportError:
-        print(f"Installation de {package}...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    finally:
-        globals()[package] = __import__(package)
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-U", package_name])
+        print(f"Package '{package_name}' installé ou mis à jour avec succès.")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Erreur lors de l'installation du package '{package_name}': {e}")
+        return False
 
-install_and_import('transformers')
-install_and_import('pandas')
-install_and_import('torch')
-install_and_import('google.colab')
-install_and_import('tqdm.auto')
-install_and_import('wandb')
-install_and_import('argparse')
-install_and_import('bitsandbytes')
+install_package("bitsandbytes")
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import pandas as pd
@@ -37,11 +30,7 @@ from google.colab import drive
 from tqdm.auto import tqdm
 import wandb
 import argparse
-import bitsandbytes
 
-from google.colab import drive
-
-drive.mount("/content/drive")
 
 # Définir les arguments pour le script
 parser = argparse.ArgumentParser(description='Translate a portion of a CSV file using MADLAD-400-7B-MT-BT.')
@@ -58,13 +47,10 @@ batch_size = args.batch_size
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Utilisation de l'appareil : {device}")
 
-# modèle MADLAD-400-7B-MT-BT
+# modèle MADLAD-400-7B-MT-BT avec quantification 8 bits
 model_name = "google/madlad400-7b-mt-bt"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name, load_in_8bit=True, device_map='auto').to(device)
-
-# Monter Google Drive pour le chargement et les sauvegardes des données
-drive.mount('/content/drive')
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name, load_in_8bit=True, device_map='auto')
 
 file_path = '/content/drive/MyDrive/hate_speech/data_combined.csv'
 try:
@@ -83,7 +69,7 @@ df_subset = df[start_index:end_index]
 print(f"Traitement des lignes de {start_index} à {end_index - 1} par lots de {batch_size}.")
 
 def translate_batch(texts):
-    input_texts = [f"<2mg> {text}" for text in texts]  # Ajouter le préfixe de langue
+    input_texts = [f"<2mg> {text}" for text in texts]  # Ajouter le préfixe de langue: 2mg
     inputs = tokenizer(input_texts, return_tensors="pt", padding=True, truncation=True).to(device)
     with torch.no_grad():
         generated_tokens = model.generate(
