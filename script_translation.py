@@ -52,7 +52,7 @@ model_name = "google/madlad400-7b-mt-bt"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name, load_in_8bit=True, device_map='auto')
 
-file_path = '/content/drive/MyDrive/hate_speech/data_combined.csv'
+file_path = 'https://drive.google.com/file/d/1WnF1ZBRCULI2vVwnJU_a1X0z1_jZRJij/view?usp=sharing'
 try:
     df = pd.read_csv(file_path)
 except FileNotFoundError:
