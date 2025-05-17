@@ -21,14 +21,14 @@ def install_package(package_name):
         print(f"Erreur lors de l'installation du package '{package_name}': {e}")
         return False
 
+install_package('tqdm')
+install_package('pandas')
 install_package("bitsandbytes")
 install_package("kaggle")
-install_and_import('transformers')
-install_and_import('pandas')
-install_and_import('torch')
-install_and_import('tqdm.auto')
-install_and_import('wandb')
-install_and_import('kagglehub')
+install_package('transformers')
+install_package('torch')
+install_package('wandb')
+install_package('kagglehub')
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import pandas as pd
