@@ -22,6 +22,7 @@ def install_package(package_name):
         return False
 
 install_package("bitsandbytes")
+install_package("kaggle")
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import pandas as pd
@@ -30,7 +31,8 @@ from google.colab import drive
 from tqdm.auto import tqdm
 import wandb
 import argparse
-
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
 
 # Définir les arguments pour le script
 parser = argparse.ArgumentParser(description='Translate a portion of a CSV file using MADLAD-400-7B-MT-BT.')
@@ -52,9 +54,27 @@ model_name = "google/madlad400-7b-mt-bt"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name, load_in_8bit=True, device_map='auto')
 
-file_path = 'https://drive.google.com/file/d/1WnF1ZBRCULI2vVwnJU_a1X0z1_jZRJij/view?usp=sharing'
+# file_path = 'https://drive.google.com/file/d/1WnF1ZBRCULI2vVwnJU_a1X0z1_jZRJij/view?usp=sharing'
 try:
-    df = pd.read_csv(file_path)
+    # The following code will only execute
+    # successfully when compression is complete
+
+    # Install dependencies as needed:
+    # pip install kagglehub[pandas-datasets]
+
+    # Set the path to the file you'd like to load
+    file_path = "data_combined (1).csv"
+
+    # Load the latest version
+    df = kagglehub.load_dataset(
+      KaggleDatasetAdapter.PANDAS,
+      "fordev0/hate-vazah",
+      file_path,
+      # Provide any additional arguments like 
+      # sql_query or pandas_kwargs. See the 
+      # documenation for more information:
+      # https://github.com/Kaggle/kagglehub/blob/main/README.md#kaggledatasetadapterpandas
+    )
 except FileNotFoundError:
     print(f"Erreur: Le fichier '{file_path}' n'a pas été trouvé.")
     exit()
