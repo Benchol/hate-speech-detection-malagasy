@@ -24,6 +24,13 @@ python script_translation.py \
     --batch_size 32 \
     --file_id "1171e_GbrxhU8k9kDUpTp-8LolqjioDCo" &
 
+# --- Traduction 3: DataSet Tweet racism(nbre_rows = 13.471)
+python script_translation.py \
+    --start_index 0 \
+    --end_index 13470 \
+    --batch_size 32 \
+    --file_id "1--V-kyXYA88hwW5dqwbgK8CbyUxBVrkX" &
+
 # --- Attente de la fin de toutes les tâches ---
 wait
 echo "Toutes les tâches de traduction sont terminées."
