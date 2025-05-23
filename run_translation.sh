@@ -1,13 +1,29 @@
 %%bash
 #!/bin/bash
 
-echo "Début de l'exécution des traductions..."
+echo "Début de l'exécution des traductions parallèles..."
 
-# Exemple pour traiter les lignes 0 à 999 avec un batch size de 8
-python script_translation.py --start_index 0 --end_index 1000 --batch_size 8 &
+# --- Traduction 1: Dataset HateSpeechDataset(nbre_rows = 440.906) (Attention: j'ai déjà fini la traduction jusqu'à l'index 130.000)
+python script_translation.py \
+    --start_index 130000 \
+    --end_index 200000 \
+    --batch_size 32 \
+    --file_id "1phccMgk_1KxNsCkcigjhkHM44w7Qy_Aa" &
 
-# Exemple pour traiter les lignes 1000 à 1999 avec un batch size de 8
-python script_translation.py --start_index 1000 --end_index 2000 --batch_size 8 &
+# --- Traduction 2: DataSet HateXplainDataset(nbre_rows = 19.229)
+python script_translation.py \
+    --start_index 0 \
+    --end_index 19228 \
+    --batch_size 32 \
+    --file_id "1NIavkN5INEV68cOpgfH6iUXrc7aAvzTa" &
 
-wait # Attend que tous les processus en arrière-plan se terminent
+# --- Traduction 3: DataSet Kurrek Slur Corpus(nbre_rows = 40.003)
+python script_translation.py \
+    --start_index 0 \
+    --end_index 20000 \
+    --batch_size 32 \
+    --file_id "1171e_GbrxhU8k9kDUpTp-8LolqjioDCo" &
+
+# --- Attente de la fin de toutes les tâches ---
+wait
 echo "Toutes les tâches de traduction sont terminées."
