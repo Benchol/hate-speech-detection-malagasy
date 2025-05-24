@@ -24,21 +24,14 @@ python script_translation.py \
     --batch_size 32 \
     --file_id "1171e_GbrxhU8k9kDUpTp-8LolqjioDCo" &
 
-# --- Traduction 4: DataSet Tweet racism(nbre_rows = 13.471)
-python script_translation.py \
-    --start_index 0 \
-    --end_index 13470 \
-    --batch_size 32 \
-    --file_id "1--V-kyXYA88hwW5dqwbgK8CbyUxBVrkX" &
-
-# --- Traduction 5: DataSet OLID(nbre_rows = 13.240)
+# --- Traduction 4: DataSet OLID(nbre_rows = 13.240)
 python script_translation.py \
     --start_index 0 \
     --end_index 13239 \
     --batch_size 32 \
     --file_id "1-7rs2hYnzSZ76AxTFOKnend97QHh9qUS" &
 
-# --- Traduction 6: DataSet DynamicallyGeneratedHateDataset (nbre_rows = 40.622)
+# --- Traduction 5: DataSet DynamicallyGeneratedHateDataset (nbre_rows = 40.622)
 python script_translation.py \
     --start_index 0 \
     --end_index 40621 \
