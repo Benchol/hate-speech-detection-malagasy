@@ -45,13 +45,6 @@ python script_translation.py \
     --batch_size 32 \
     --file_id "1-7ziVqFY-4zUwHoZ_NIkxFGYmDEevr-p" &
 
-# --- Traduction 7: DataSet HateCheck (nbre_rows = 3.729)
-python script_translation.py \
-    --start_index 0 \
-    --end_index 3728 \
-    --batch_size 32 \
-    --file_id "1gQdh4M_2cU_3S0Jbee23pL5Rb73boLcR" &
-
 # --- Attente de la fin de toutes les tâches ---
 wait
 echo "Toutes les tâches de traduction sont terminées."
