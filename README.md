@@ -21,7 +21,7 @@ Le corpus est composé de deux sources :
 1. ✅ **Données traduites** : Traduction en malgache de datasets publics (HateXplain, DGHD, slur-corpus, HateCheck, OLID, SWAD, Labeled_data, twitter_sexism, twitter_racism) via MadLab-7B-MT-BT.
 2. 🗣️ **Données Facebook Malagasy** : Scrappées manuellement sur des publications ciblées, nettoyées et annotées manuellement.
 
-Les données combinées comportent :
+Statistiques des données récupérées sur Facebook:
 - ~25,000 exemples
 - ≈32.5% de discours haineux
 
