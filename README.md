@@ -36,7 +36,7 @@ Statistiques des données récupérées sur Facebook:
 - Utilise la **Focal Loss** pour gérer le déséquilibre
 - Apprentissage supervisé sur données combinées
 
-📂 Dossier : `mt5_finetuning/`
+📂 Dossier : `models/mT5`
 
 ---
 
@@ -46,7 +46,7 @@ Statistiques des données récupérées sur Facebook:
 - Utilise la **CrossEntropyLoss standard**
 - Fine-tuning classique sur les mêmes données
 
-📂 Dossier : `mbert_finetuning/`
+📂 Dossier : `models/mBERT`
 
 ---
 
@@ -59,7 +59,7 @@ Statistiques des données récupérées sur Facebook:
 - Augmentation des textes avec répétition pondérée des mots-clés haineux
 - Courbes ROC, matrice de confusion, tests interactifs
 
-📂 Dossier : `tfidf_models/`
+📂 Dossier : `models/xgboost_multinomial`
 
 ---
 
