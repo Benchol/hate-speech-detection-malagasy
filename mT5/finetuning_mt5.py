@@ -373,15 +373,16 @@ def log_metrics(metrics, prefix=""):
 
 # Clean text function to preprocess input text
 def clean_text(texte):
+    # clean special text
     mots_vides = ["voir plus", "lire la suite", "en savoir plus"]
     texte = texte.lower()
     for mot in mots_vides:
         texte = texte.replace(mot, "")
 
-    # Suppression des URL
+    # clean urls
     texte = re.sub(r'http\S+|www\S+|https\S+', '', texte)
 
-    # Suppression des nombres
+    # clean numbers
     texte = re.sub(r'\d+', '', texte)
 
     return texte.strip()
