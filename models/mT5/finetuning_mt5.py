@@ -251,7 +251,7 @@ class MT5ForClassification(nn.Module):
             nn.LayerNorm(256),
             nn.GELU(),
             nn.Dropout(config.dropout_rate),
-            nn.Linear(256, 2)                               # Output layer (binary)
+            nn.Linear(256, 1)                               # Output layer (binary)
           )
 
     def forward(self, input_ids, attention_mask, labels=None):
@@ -268,12 +268,11 @@ class MT5ForClassification(nn.Module):
         pooled = sum_embeddings / sum_mask
 
         pooled = self.dropout(pooled)
-        logits = self.classifier(pooled)
+        logits = self.classifier(pooled).squeeze(-1) 
 
         loss = None
         if labels is not None:
-            labels_one_hot = F.one_hot(labels, num_classes=2).float()
-            loss = self.loss_fct(logits, labels_one_hot)
+            loss = self.loss_fct(logits, labels.float())
 
         return logits, loss
 
@@ -466,7 +465,10 @@ def main():
             optimizer.step()
 
             train_loss += loss.item()
-            preds = torch.argmax(logits, dim=1)
+
+            probs = torch.sigmoid(logits)
+            preds = (probs > 0.5).long()  
+
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(inputs["labels"].cpu().numpy())
 
@@ -483,12 +485,13 @@ def main():
                 logits, loss = model(**inputs)
 
                 val_loss += loss.item()
-                probs = torch.softmax(logits, dim=1)
-                preds = torch.argmax(logits, dim=1)
+                
+                probs = torch.sigmoid(logits)
+                preds = (probs > 0.5).long()
 
                 val_preds.extend(preds.cpu().numpy())
                 val_labels.extend(inputs["labels"].cpu().numpy())
-                val_probs.extend(probs[:, 1].cpu().numpy())
+                val_probs.extend(probs.cpu().numpy())
 
         fpr, tpr, _ = roc_curve(val_labels, val_probs)
         roc_auc = auc(fpr, tpr)
@@ -552,12 +555,12 @@ def main():
             logits, loss = model(**inputs)
 
             test_loss += loss.item()
-            probs = torch.softmax(logits, dim=1)
-            preds = torch.argmax(logits, dim=1)
+            probs = torch.sigmoid(logits)
+            preds = (probs > 0.5).long()
 
             test_preds.extend(preds.cpu().numpy())
             test_labels.extend(inputs["labels"].cpu().numpy())
-            test_probs.extend(probs[:, 1].cpu().numpy())
+            test_probs.extend(probs.cpu().numpy())
 
     test_preds_prob = np.array(test_probs)
     test_true_labels = np.array(test_labels)
@@ -602,9 +605,10 @@ def predict_text(model, tokenizer, text, device):
             input_ids=encoding['input_ids'],
             attention_mask=encoding['attention_mask']
         )
-        prediction = torch.argmax(outputs, dim=1)
+        probs = torch.sigmoid(outputs)
+        preds = (probs > 0.5).long()
 
-    if prediction.item() == 0:
+    if preds == 0:
         print(text, " => Pas de haine 👍")
     else:
         print(text, " => Discours haineux 🚨")
