@@ -7,9 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1KhXWeFASXC5jTdo3qAlb8wS19Sfg54J7
 """
 
-from google.colab import drive
-drive.mount('/content/drive')
-
 # Import necessary libraries
 import pandas as pd
 import numpy as np
@@ -30,6 +27,8 @@ import random
 import os
 import re
 import json
+import argparse
+import gdown
 
 # Configure the random seed for reproducibility
 SEED = 42
@@ -58,6 +57,28 @@ os.environ["WANDB_API_KEY"] = WANDB_API_KEY
 # =============================== #
 #           Utility Functions     #
 # =============================== #
+
+# Parse command line arguments for configuration
+def parse_args():
+    """Parse les arguments en ligne de commande"""
+    parser = argparse.ArgumentParser(description='Configuration for hate speech detection')
+    
+    # Data arguments
+    parser.add_argument('--train_file_id', type=str, help='Google Drive ID for the training data file')
+    parser.add_argument('--test_file_id', type=str, help='Google Drive ID for the test data file')
+        
+    # Training arguments
+    parser.add_argument('--batch_size', type=int, help='Batch size for training')
+    parser.add_argument('--epochs', type=int, help='Number of training epochs')
+    parser.add_argument('--learning_rate', type=float, help='Learning rate')
+    
+    # W&B arguments
+    parser.add_argument('--wandb_project', type=str, help='Weights & Biases project name')
+    parser.add_argument('--wandb_name', type=str, help='Weights & Biases run name')
+    parser.add_argument('--wandb_key', type=str, help='Weights & Biases API key')
+    
+    return parser.parse_args()
+
 # Clean text function to preprocess input text
 def clean_text(texte):
     # clean special text
@@ -101,9 +122,26 @@ def plot_roc_curve(fpr, tpr, roc_auc, prefix=""):
     wandb.log({f"roc_curve_{prefix}": wandb.Image(plt)})
     plt.close()
 
+# Load data from Google Drive using file ID
+def load_data_by_id(file_id):
+    """Charge les données à partir de Google Drive en utilisant l'ID de fichier"""
+    local_file_name = f"downloaded_data_{file_id}.csv"
+    try:
+        print(f"Downloading file from {file_id}...")
+        file_url = f'https://drive.google.com/uc?id={file_id}'
+        gdown.download(file_url, local_file_name, quiet=False)
+        file_path = local_file_name
+        df = pd.read_csv(file_path)
+        print("CSV file successfully downloaded and loaded.")
+        return df
+    except Exception as e:
+        print(f"Error downloading/loading CSV file from URL: {e}")
+        exit()
+
 # load data 
-def load_data(file_path):
-    df = pd.read_csv(file_path)
+def load_data(file_id):
+    # Load data from Google Drive using the provided file ID
+    df = load_data_by_id(file_id)
 
     # dropna
     df = df.dropna()
@@ -245,10 +283,20 @@ def train_epoch(model, data_loader, optimizer, device, scheduler):
 #               Main                  #
 # =================================== #
 
+# Parse command line arguments
+args = parse_args()
+
+BATCH_SIZE = args.batch_size if args.batch_size else BATCH_SIZE
+EPOCHS = args.epochs if args.epochs else EPOCHS
+LEARNING_RATE = args.learning_rate if args.learning_rate else LEARNING_RATE
+
 # Setup Weights & Biases (W&B) for experiment tracking
+WANDB_API_KEY = args.wandb_key
+os.environ["WANDB_API_KEY"] = WANDB_API_KEY
+
 wandb.init(
-    project="hate_speech_malagasy_fv",
-    name="finetuning_mBERT_combined",
+    project=args.wandb_project,
+    name=args.wandb_name,
     config={
         "batch_size": BATCH_SIZE,
         "epochs": EPOCHS,
@@ -274,8 +322,8 @@ wandb.config.update({
 })
 
 # loading the dataset
-texts, labels = load_data("/content/drive/MyDrive/hate_speech/mg/combined/combined_dataset_train.csv")
-X_test, y_test = load_data("/content/drive/MyDrive/hate_speech/mg/combined/combined_dataset_test.csv")
+texts, labels = load_data(args.train_file_id)
+X_test, y_test = load_data(args.test_file_id)
 X_train, X_val, y_train, y_val = train_test_split(texts, labels, test_size=0.1, random_state=SEED, stratify=labels)
 
 # Create DataLoaders for training, validation, and test sets

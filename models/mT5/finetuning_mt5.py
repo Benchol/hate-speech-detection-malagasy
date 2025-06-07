@@ -7,9 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/17Ke-jQYifphT3zDkmS5xG6XoLaPJJZ6P
 """
 
-from google.colab import drive
-drive.mount('/content/drive')
-
 # Import necessary libraries
 import torch
 import wandb
@@ -30,42 +27,52 @@ import seaborn as sns
 from tqdm import tqdm
 import os
 import re
-
-# --- Configuration WandB
-WANDB_API_KEY = "00623049297b4d6a9b3febd02306cf1294021a68"
-os.environ["WANDB_API_KEY"] = WANDB_API_KEY
+import argparse
+import gdown
 
 # =================================================== #
 #             Configuration and Focal Loss            #
 # =================================================== #
 class Config:
-    # Data
-    data_path = "/content/drive/MyDrive/hate_speech/mg/combined/combined_dataset_train.csv"
-    data_test_path = "/content/drive/MyDrive/hate_speech/mg/combined/combined_dataset_test.csv"
-    text_col = "text"
-    label_col = "label"
-    train_ratio = 0.8
-    val_ratio = 0.1
-    test_ratio = 0.1
+    def __init__(
+        self, 
+        train_file_id="", 
+        test_file_id="", 
+        batch_size=8,
+        epochs=10,
+        learning_rate=2e-5,
+        wandb_key="", 
+        wandb_project="", 
+        wandb_name=""
+    ):
+        # Data
+        self.train_file_id = train_file_id
+        self.test_file_id = test_file_id
+        self.text_col = "text"
+        self.label_col = "label"
+        self.train_ratio = 0.8
+        self.val_ratio = 0.1
+        self.test_ratio = 0.1
 
-    # Model
-    model_name = "google/mt5-small"
-    max_length = 512
-    dropout_rate = 0.4
+        # Model
+        self.model_name = "google/mt5-small"
+        self.max_length = 512
+        self.dropout_rate = 0.4
 
-    # Training
-    batch_size = 8
-    epochs = 10
-    learning_rate = 2e-5
-    weight_decay = 0.05
-    patience = 3
-    optim_mode = 'min'
-    optim_factor = 0.5
-    early_stopping_patience = 10
+        # Training
+        self.batch_size = 8
+        self.epochs = 10
+        self.learning_rate = 2e-5
+        self.weight_decay = 0.05
+        self.patience = 3
+        self.optim_mode = 'min'
+        self.optim_factor = 0.5
+        self.early_stopping_patience = 10
 
-    # W&B
-    wandb_project = "hate_speech_malagasy_fv"
-    wandb_name = "finetuning_mT5_combined"
+        # W&B
+        self.wandb_project = wandb_project
+        self.wandb_name = wandb_name
+        self.wandb_key = wandb_key
 
 
 """
@@ -214,26 +221,26 @@ class FocalLoss(nn.Module):
 #           Model             #
 # =========================== #
 class MT5ForClassification(nn.Module):
-     """
-    Custom mT5 model for hate speech classification with Focal Loss.
+    # """
+    # Custom mT5 model for hate speech classification with Focal Loss.
     
-    This class implements a sequence classification architecture based on mT5's encoder
-    with a custom classifier head. It uses mean pooling over the token embeddings
-    and a multi-layer perceptron for classification.
+    # This class implements a sequence classification architecture based on mT5's encoder
+    # with a custom classifier head. It uses mean pooling over the token embeddings
+    # and a multi-layer perceptron for classification.
     
-    Attributes:
-        mt5 (MT5Model): The mT5 encoder model
-        dropout (nn.Dropout): Dropout layer for regularization
-        loss_fct (FocalLoss): Loss function for imbalanced classification
-        classifier (nn.Sequential): Custom classifier head
+    # Attributes:
+    #     mt5 (MT5Model): The mT5 encoder model
+    #     dropout (nn.Dropout): Dropout layer for regularization
+    #     loss_fct (FocalLoss): Loss function for imbalanced classification
+    #     classifier (nn.Sequential): Custom classifier head
         
-    Args:
-        config (Config): Configuration object containing model parameters
+    # Args:
+    #     config (Config): Configuration object containing model parameters
     
-    Note:
-        Uses unmodified Focal Loss implementation from:
-        https://github.com/itakurah/Focal-loss-PyTorch
-    """
+    # Note:
+    #     Uses unmodified Focal Loss implementation from:
+    #     https://github.com/itakurah/Focal-loss-PyTorch
+    # """
     def __init__(self, config):
         super().__init__()
         self.mt5 = MT5Model.from_pretrained(config.model_name)
@@ -307,8 +314,49 @@ class HateSpeechDataset(Dataset):
 #           Utility Functions     #
 # =============================== #
 
+# Parse command line arguments for configuration
+def parse_args():
+    """Parse les arguments en ligne de commande"""
+    parser = argparse.ArgumentParser(description='Configuration for hate speech detection')
+    
+    # Data arguments
+    parser.add_argument('--train_file_id', type=str, help='Google Drive ID for the training data file')
+    parser.add_argument('--test_file_id', type=str, help='Google Drive ID for the test data file')
+        
+    # Training arguments
+    parser.add_argument('--batch_size', type=int, help='Batch size for training')
+    parser.add_argument('--epochs', type=int, help='Number of training epochs')
+    parser.add_argument('--learning_rate', type=float, help='Learning rate')
+    
+    # W&B arguments
+    parser.add_argument('--wandb_project', type=str, help='Weights & Biases project name')
+    parser.add_argument('--wandb_name', type=str, help='Weights & Biases run name')
+    parser.add_argument('--wandb_key', type=str, help='Weights & Biases API key')
+    
+    return parser.parse_args()
+
+# Load data from Google Drive using file ID
+def load_data(file_id):
+    """Charge les données à partir de Google Drive en utilisant l'ID de fichier"""
+    local_file_name = f"downloaded_data_{file_id}.csv"
+    try:
+        print(f"Downloading file from {file_id}...")
+        file_url = f'https://drive.google.com/uc?id={file_id}'
+        gdown.download(file_url, local_file_name, quiet=False)
+        file_path = local_file_name
+        df = pd.read_csv(file_path)
+        print("CSV file successfully downloaded and loaded.")
+        return df
+    except Exception as e:
+        print(f"Error downloading/loading CSV file from URL: {e}")
+        exit()
+
 # Setup Weights & Biases (W&B) for experiment tracking
 def setup_wandb(config):
+    # --- Configuration WandB
+    WANDB_API_KEY = config.wandb_key
+    os.environ["WANDB_API_KEY"] = WANDB_API_KEY
+
     wandb.init(
         project=config.wandb_project,
         name=config.wandb_name,
@@ -391,12 +439,26 @@ def clean_text(texte):
 # ========================== #
 # Main function to run the training and evaluation pipeline
 def main():
-    config = Config()
+    # Parse command line arguments
+    args = parse_args()
+    
+    # Initialize config with default values, overwritten by command line args if provided
+    config = Config(
+        train_file_id=args.train_file_id,
+        test_file_id=args.test_file_id,
+        batch_size=args.batch_size if args.batch_size else Config.batch_size,
+        epochs=args.epochs if args.epochs else Config.epochs,
+        learning_rate=args.learning_rate if args.learning_rate else Config.learning_rate,
+        wandb_project=args.wandb_project if args.wandb_project else Config.wandb_project,
+        wandb_name=args.wandb_name if args.wandb_name else Config.wandb_name,
+        wandb_key=args.wandb_key
+    )
+
     setup_wandb(config)
 
     # load data 
-    df = pd.read_csv(config.data_path)
-    df_test = pd.read_csv(config.data_test_path)
+    df = load_data(config.train_file_id)
+    df_test = load_data(config.test_file_id)
 
     # dropna
     df = df.dropna()
